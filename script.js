@@ -6,18 +6,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // 從本地存儲加載已保存的狀態
   loadList();
 
-  // 建立人員篩選按鈕
-  createPersonFilters();
-
-  // 初始化每個人的勾選記錄
-  initializePersonCheckedItems();
-
-  // 為已有的複選框添加事件
-  initializeCheckboxEvents();
-
-  // 為刪除按鈕添加事件
-  initializeDeleteEvents();
-
   // 添加統一輸入區的事件監聽器
   document.getElementById("add-unified-item").addEventListener("click", addUnifiedItem);
 
@@ -30,9 +18,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
-
-  // 初始化進度條
-  updateProgress();
 });
 
 // 初始化複選框事件
@@ -59,17 +44,17 @@ function initializeDeleteEvents() {
 function initializePersonCheckedItems() {
   // 先清空記錄
   personCheckedItems = {
-    all: {}, // 確保始終有 "all" 篩選器的紀錄
+    "all": {} // 確保始終有 "all" 篩選器的紀錄
   };
-
+  
   // 預設的人員列表
   const defaultPersons = ["77", "阿曹", "Ikea", "吉拉", "康霖", "思霈", "昕樺"];
-
+  
   // 為每個人初始化勾選記錄
-  defaultPersons.forEach((person) => {
+  defaultPersons.forEach(person => {
     personCheckedItems[person] = {};
   });
-
+  
   // 添加通用標籤「所有人」
   personCheckedItems["所有人"] = {};
 }
@@ -78,14 +63,14 @@ function initializePersonCheckedItems() {
 function handleCheckboxChange(checkbox) {
   const currentPerson = getCurrentFilterPerson();
   const itemId = checkbox.id;
-
+  
   // 更新當前人的勾選記錄
   if (checkbox.checked) {
     personCheckedItems[currentPerson][itemId] = true;
   } else {
     delete personCheckedItems[currentPerson][itemId];
   }
-
+  
   updateItemStatus(checkbox);
   updateProgress();
 }
@@ -102,16 +87,16 @@ function setupFilterButtons() {
   filterButtons.forEach((button) => {
     button.addEventListener("click", function () {
       const person = this.dataset.person;
-
+      
       // 更新篩選顯示
       filterItems(person);
-
+      
       // 更新按鈕狀態
       document.querySelectorAll(".person-filter button").forEach((btn) => {
         btn.classList.remove("active");
       });
       this.classList.add("active");
-
+      
       // 更新勾選狀態以顯示該人的勾選項目
       updateCheckboxStates();
     });
@@ -122,14 +107,14 @@ function setupFilterButtons() {
 function updateCheckboxStates() {
   const currentPerson = getCurrentFilterPerson();
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
-  checkboxes.forEach((checkbox) => {
+  
+  checkboxes.forEach(checkbox => {
     const itemId = checkbox.id;
     // 根據當前篩選的人名設置勾選狀態
     checkbox.checked = personCheckedItems[currentPerson][itemId] === true;
     updateItemStatus(checkbox);
   });
-
+  
   updateProgress();
 }
 
@@ -266,7 +251,7 @@ function addNewItem(listId, name, quantity, persons) {
     // 更新進度和篩選器
     updateProgress();
     createPersonFilters();
-
+    
     // 確保剛添加的項目對應的人員勾選記錄已初始化
     if (persons) {
       const personsList = persons.split(",");
@@ -288,7 +273,7 @@ function createPersonFilters() {
 
   // 預設的人員列表
   const defaultPersons = ["77", "阿曹", "Ikea", "吉拉", "康霖", "思霈", "昕樺"];
-  const commonTags = ["所有人"]; // 只保留「所有人」作為通用標籤
+  const commonTags = ["所有人"];  // 只保留「所有人」作為通用標籤
 
   // 收集項目中的人員標籤
   const itemPersons = new Set(defaultPersons);
@@ -314,7 +299,7 @@ function createPersonFilters() {
 
   // 重新添加篩選功能
   setupFilterButtons();
-
+  
   // 確保每個人的勾選記錄已初始化
   itemPersons.forEach((person) => {
     if (!personCheckedItems[person]) {
@@ -326,7 +311,7 @@ function createPersonFilters() {
 // 篩選項目，只顯示包含「所有人」的通用標籤項目
 function filterItems(person) {
   const items = document.querySelectorAll(".item");
-  const commonTags = ["所有人"]; // 只保留「所有人」作為通用標籤
+  const commonTags = ["所有人"];  // 只保留「所有人」作為通用標籤
 
   items.forEach((item) => {
     if (person === "all") {
@@ -359,18 +344,20 @@ function updateItemStatus(checkbox) {
 // 更新進度條
 function updateProgress() {
   const currentPerson = getCurrentFilterPerson();
-  const visibleItems = Array.from(document.querySelectorAll(".item")).filter((item) => item.style.display !== "none");
-
+  const visibleItems = Array.from(document.querySelectorAll('.item')).filter(
+    item => item.style.display !== 'none'
+  );
+  
   const total = visibleItems.length;
   let checked = 0;
-
-  visibleItems.forEach((item) => {
+  
+  visibleItems.forEach(item => {
     const checkbox = item.querySelector('input[type="checkbox"]');
     if (checkbox && checkbox.checked) {
       checked++;
     }
   });
-
+  
   const progressBar = document.getElementById("progress");
   const progressText = document.getElementById("progress-text");
 
@@ -387,7 +374,7 @@ function deleteItem(itemElement) {
     for (let person in personCheckedItems) {
       delete personCheckedItems[person][itemId];
     }
-
+    
     // 從DOM中移除項目
     itemElement.remove();
 
@@ -404,7 +391,7 @@ function saveList() {
   const categories = document.querySelectorAll(".category");
   const savedData = {
     categories: {},
-    personChecked: personCheckedItems, // 保存每個人的勾選狀態
+    personChecked: personCheckedItems // 保存每個人的勾選狀態
   };
 
   categories.forEach((category) => {
@@ -441,121 +428,165 @@ function saveList() {
   alert("清單已儲存！");
 }
 
-// 從本地存儲載入清單
-function loadList() {
+// 從本地存儲載入清單，如果沒有就載入預設項目
+async function loadList() {
   const savedData = localStorage.getItem("groupCampingChecklist");
 
   if (savedData) {
-    const data = JSON.parse(savedData);
-
-    // 清空現有清單
-    document.querySelectorAll(".item-list").forEach((list) => {
-      list.innerHTML = "";
-    });
-
-    // 載入每個人的勾選狀態
-    if (data.personChecked) {
-      personCheckedItems = data.personChecked;
-    } else {
-      // 兼容舊版本保存的數據（沒有personChecked屬性）
-      initializePersonCheckedItems();
-    }
-
-    // 添加保存的項目
-    const categoriesData = data.categories || data; // 兼容舊版本保存的數據結構
-    for (const categoryId in categoriesData) {
-      const list = document.getElementById(categoryId);
-      if (list && categoriesData[categoryId].items) {
-        categoriesData[categoryId].items.forEach((item) => {
-          // 創建自定義複選框
-          const customCheckbox = document.createElement("div");
-          customCheckbox.className = "custom-checkbox";
-
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.id = item.id;
-
-          // 檢查當前選擇的人是否勾選了此項目
-          const currentPerson = getCurrentFilterPerson();
-          checkbox.checked = personCheckedItems[currentPerson] && personCheckedItems[currentPerson][item.id] === true;
-
-          const checkboxLabel = document.createElement("label");
-          checkboxLabel.className = "checkbox-label";
-          checkboxLabel.setAttribute("for", item.id);
-
-          customCheckbox.appendChild(checkbox);
-          customCheckbox.appendChild(checkboxLabel);
-
-          const li = document.createElement("li");
-          li.className = "item";
-          li.dataset.person = item.personData;
-
-          // 創建項目標籤
-          const itemLabel = document.createElement("label");
-          itemLabel.className = "item-label";
-          itemLabel.setAttribute("for", item.id);
-
-          if (checkbox.checked) {
-            itemLabel.classList.add("checked");
-          }
-
-          const nameSpan = document.createElement("span");
-          nameSpan.className = "item-name";
-          nameSpan.textContent = item.name;
-
-          itemLabel.appendChild(nameSpan);
-
-          if (item.quantity) {
-            const quantitySpan = document.createElement("span");
-            quantitySpan.className = "item-quantity";
-            quantitySpan.textContent = `x${item.quantity}`;
-            itemLabel.appendChild(quantitySpan);
-          }
-
-          const personTags = document.createElement("span");
-          personTags.className = "person-tags";
-
-          if (item.persons) {
-            const personsList = item.persons.split(",");
-            personsList.forEach((person) => {
-              if (person.trim()) {
-                const personTag = document.createElement("span");
-                personTag.className = "person-tag";
-                personTag.textContent = person.trim();
-                personTags.appendChild(personTag);
-              }
-            });
-          }
-
-          itemLabel.appendChild(personTags);
-
-          // 添加刪除按鈕
-          const deleteBtn = document.createElement("button");
-          deleteBtn.className = "delete-btn";
-          deleteBtn.innerHTML = "×";
-          deleteBtn.title = "刪除項目";
-          deleteBtn.addEventListener("click", function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            deleteItem(li);
-          });
-
-          checkbox.addEventListener("change", function () {
-            handleCheckboxChange(this);
-          });
-
-          li.appendChild(customCheckbox);
-          li.appendChild(itemLabel);
-          li.appendChild(deleteBtn);
-          list.appendChild(li);
-        });
+    // 載入已保存的清單
+    renderSavedItems(JSON.parse(savedData));
+  } else {
+    // 沒有已保存的清單，載入預設項目
+    try {
+      // 從文件加載預設項目
+      const response = await fetch('defaultItems.json');
+      if (response.ok) {
+        const defaultData = await response.json();
+        renderSavedItems(defaultData);
+      } else {
+        console.error('無法載入預設項目');
+        // 初始化空清單
+        initializePersonCheckedItems();
+        
+        // 建立人員篩選按鈕
+        createPersonFilters();
+        
+        // 為已有的複選框添加事件
+        initializeCheckboxEvents();
+        
+        // 為刪除按鈕添加事件
+        initializeDeleteEvents();
       }
+    } catch (error) {
+      console.error('載入預設項目時出錯:', error);
+      // 初始化空清單
+      initializePersonCheckedItems();
+      
+      // 建立人員篩選按鈕
+      createPersonFilters();
+      
+      // 為已有的複選框添加事件
+      initializeCheckboxEvents();
+      
+      // 為刪除按鈕添加事件
+      initializeDeleteEvents();
     }
-
-    // 更新進度
-    updateProgress();
-
-    // 更新篩選器
-    createPersonFilters();
   }
+}
+
+// 渲染保存的或預設的項目
+function renderSavedItems(data) {
+  // 清空現有清單
+  document.querySelectorAll(".item-list").forEach((list) => {
+    list.innerHTML = "";
+  });
+
+  // 載入每個人的勾選狀態
+  if (data.personChecked) {
+    personCheckedItems = data.personChecked;
+  } else {
+    // 兼容舊版本保存的數據（沒有personChecked屬性）
+    initializePersonCheckedItems();
+  }
+
+  // 添加保存的項目
+  const categoriesData = data.categories || data; // 兼容舊版本保存的數據結構
+  for (const categoryId in categoriesData) {
+    const list = document.getElementById(categoryId);
+    if (list && categoriesData[categoryId].items) {
+      categoriesData[categoryId].items.forEach((item) => {
+        // 創建自定義複選框
+        const customCheckbox = document.createElement("div");
+        customCheckbox.className = "custom-checkbox";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = item.id;
+        
+        // 檢查當前選擇的人是否勾選了此項目
+        const currentPerson = getCurrentFilterPerson();
+        checkbox.checked = personCheckedItems[currentPerson] && personCheckedItems[currentPerson][item.id] === true;
+
+        const checkboxLabel = document.createElement("label");
+        checkboxLabel.className = "checkbox-label";
+        checkboxLabel.setAttribute("for", item.id);
+
+        customCheckbox.appendChild(checkbox);
+        customCheckbox.appendChild(checkboxLabel);
+
+        const li = document.createElement("li");
+        li.className = "item";
+        li.dataset.person = item.personData;
+
+        // 創建項目標籤
+        const itemLabel = document.createElement("label");
+        itemLabel.className = "item-label";
+        itemLabel.setAttribute("for", item.id);
+
+        if (checkbox.checked) {
+          itemLabel.classList.add("checked");
+        }
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "item-name";
+        nameSpan.textContent = item.name;
+
+        itemLabel.appendChild(nameSpan);
+
+        if (item.quantity) {
+          const quantitySpan = document.createElement("span");
+          quantitySpan.className = "item-quantity";
+          quantitySpan.textContent = `x${item.quantity}`;
+          itemLabel.appendChild(quantitySpan);
+        }
+
+        const personTags = document.createElement("span");
+        personTags.className = "person-tags";
+
+        if (item.persons) {
+          const personsList = item.persons.split(",");
+          personsList.forEach((person) => {
+            if (person.trim()) {
+              const personTag = document.createElement("span");
+              personTag.className = "person-tag";
+              personTag.textContent = person.trim();
+              personTags.appendChild(personTag);
+            }
+          });
+        }
+
+        itemLabel.appendChild(personTags);
+
+        // 添加刪除按鈕
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.innerHTML = "×";
+        deleteBtn.title = "刪除項目";
+        deleteBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          deleteItem(li);
+        });
+
+        checkbox.addEventListener("change", function () {
+          handleCheckboxChange(this);
+        });
+
+        li.appendChild(customCheckbox);
+        li.appendChild(itemLabel);
+        li.appendChild(deleteBtn);
+        list.appendChild(li);
+      });
+    }
+  }
+
+  // 更新進度
+  updateProgress();
+
+  // 更新篩選器
+  createPersonFilters();
+  
+  // 初始化事件
+  initializeCheckboxEvents();
+  initializeDeleteEvents();
 }
