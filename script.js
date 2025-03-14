@@ -44,33 +44,68 @@ function initializeDeleteEvents() {
 function initializePersonCheckedItems() {
   // 先清空記錄
   personCheckedItems = {
-    "all": {} // 確保始終有 "all" 篩選器的紀錄
+    all: {}, // 確保始終有 "all" 篩選器的紀錄
   };
-  
+
   // 預設的人員列表
   const defaultPersons = ["77", "阿曹", "Ikea", "吉拉", "康霖", "思霈", "昕樺"];
-  
+
   // 為每個人初始化勾選記錄
-  defaultPersons.forEach(person => {
+  defaultPersons.forEach((person) => {
     personCheckedItems[person] = {};
   });
-  
+
   // 添加通用標籤「所有人」
   personCheckedItems["所有人"] = {};
+}
+
+// 獲取項目所屬的類別
+function getParentCategory(item) {
+  // 向上尋找父元素，直到找到 item-list
+  let parent = item.parentElement;
+  while (parent && !parent.classList.contains("item-list")) {
+    parent = parent.parentElement;
+  }
+  return parent ? parent.id : null;
 }
 
 // 處理複選框勾選變更
 function handleCheckboxChange(checkbox) {
   const currentPerson = getCurrentFilterPerson();
   const itemId = checkbox.id;
-  
+  const item = checkbox.closest(".item");
+
   // 更新當前人的勾選記錄
   if (checkbox.checked) {
     personCheckedItems[currentPerson][itemId] = true;
+
+    // 檢查是否所有負責人都已勾選此項目（Shared Gear 和 Food 類別）
+    const parentCategory = getParentCategory(item);
+    if (parentCategory === "public-items" || parentCategory === "food-items") {
+      const responsiblePersons = item.dataset.person.split(",").map((p) => p.trim());
+      // 只檢查真實的人員（不包括「所有人」標籤）
+      const realPersons = responsiblePersons.filter((p) => p !== "所有人");
+
+      if (realPersons.length > 0) {
+        // 檢查是否所有負責人都勾選了此項目
+        const allResponsibleChecked = realPersons.every((person) => personCheckedItems[person] && personCheckedItems[person][itemId]);
+
+        // 如果所有負責人都勾選了，則在 "all" 篩選器中也勾選
+        if (allResponsibleChecked) {
+          personCheckedItems["all"][itemId] = true;
+        }
+      }
+    }
   } else {
     delete personCheckedItems[currentPerson][itemId];
+
+    // 如果任何負責人取消勾選，則在 "all" 篩選器中也取消勾選
+    const parentCategory = getParentCategory(item);
+    if (parentCategory === "public-items" || parentCategory === "food-items") {
+      delete personCheckedItems["all"][itemId];
+    }
   }
-  
+
   updateItemStatus(checkbox);
   updateProgress();
 }
@@ -87,16 +122,16 @@ function setupFilterButtons() {
   filterButtons.forEach((button) => {
     button.addEventListener("click", function () {
       const person = this.dataset.person;
-      
+
       // 更新篩選顯示
       filterItems(person);
-      
+
       // 更新按鈕狀態
       document.querySelectorAll(".person-filter button").forEach((btn) => {
         btn.classList.remove("active");
       });
       this.classList.add("active");
-      
+
       // 更新勾選狀態以顯示該人的勾選項目
       updateCheckboxStates();
     });
@@ -107,14 +142,36 @@ function setupFilterButtons() {
 function updateCheckboxStates() {
   const currentPerson = getCurrentFilterPerson();
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-  
-  checkboxes.forEach(checkbox => {
+
+  checkboxes.forEach((checkbox) => {
     const itemId = checkbox.id;
-    // 根據當前篩選的人名設置勾選狀態
-    checkbox.checked = personCheckedItems[currentPerson][itemId] === true;
+    const item = checkbox.closest(".item");
+
+    // 如果是 "all" 篩選器，則需要特別處理 Shared Gear 和 Food 類別
+    if (currentPerson === "all") {
+      const parentCategory = getParentCategory(item);
+
+      if (parentCategory === "public-items" || parentCategory === "food-items") {
+        // 已經在 handleCheckboxChange 中處理了，只需檢查 all 中的狀態
+        checkbox.checked = personCheckedItems[currentPerson][itemId] === true;
+      } else {
+        // 個人物品類別，如果項目標記為「所有人」，則顯示該項目在 all 中的狀態
+        const itemPersons = item.dataset.person.split(",").map((p) => p.trim());
+        if (itemPersons.includes("所有人")) {
+          checkbox.checked = personCheckedItems[currentPerson][itemId] === true;
+        } else {
+          // 其他個人物品，如果選擇「全部」篩選器，則預設不顯示勾選
+          checkbox.checked = false;
+        }
+      }
+    } else {
+      // 非 "all" 篩選器，顯示該人的勾選狀態
+      checkbox.checked = personCheckedItems[currentPerson][itemId] === true;
+    }
+
     updateItemStatus(checkbox);
   });
-  
+
   updateProgress();
 }
 
@@ -251,7 +308,7 @@ function addNewItem(listId, name, quantity, persons) {
     // 更新進度和篩選器
     updateProgress();
     createPersonFilters();
-    
+
     // 確保剛添加的項目對應的人員勾選記錄已初始化
     if (persons) {
       const personsList = persons.split(",");
@@ -273,7 +330,7 @@ function createPersonFilters() {
 
   // 預設的人員列表
   const defaultPersons = ["77", "阿曹", "Ikea", "吉拉", "康霖", "思霈", "昕樺"];
-  const commonTags = ["所有人"];  // 只保留「所有人」作為通用標籤
+  const commonTags = ["所有人"]; // 只保留「所有人」作為通用標籤
 
   // 收集項目中的人員標籤
   const itemPersons = new Set(defaultPersons);
@@ -299,7 +356,7 @@ function createPersonFilters() {
 
   // 重新添加篩選功能
   setupFilterButtons();
-  
+
   // 確保每個人的勾選記錄已初始化
   itemPersons.forEach((person) => {
     if (!personCheckedItems[person]) {
@@ -311,7 +368,7 @@ function createPersonFilters() {
 // 篩選項目，只顯示包含「所有人」的通用標籤項目
 function filterItems(person) {
   const items = document.querySelectorAll(".item");
-  const commonTags = ["所有人"];  // 只保留「所有人」作為通用標籤
+  const commonTags = ["所有人"]; // 只保留「所有人」作為通用標籤
 
   items.forEach((item) => {
     if (person === "all") {
@@ -344,20 +401,18 @@ function updateItemStatus(checkbox) {
 // 更新進度條
 function updateProgress() {
   const currentPerson = getCurrentFilterPerson();
-  const visibleItems = Array.from(document.querySelectorAll('.item')).filter(
-    item => item.style.display !== 'none'
-  );
-  
+  const visibleItems = Array.from(document.querySelectorAll(".item")).filter((item) => item.style.display !== "none");
+
   const total = visibleItems.length;
   let checked = 0;
-  
-  visibleItems.forEach(item => {
+
+  visibleItems.forEach((item) => {
     const checkbox = item.querySelector('input[type="checkbox"]');
     if (checkbox && checkbox.checked) {
       checked++;
     }
   });
-  
+
   const progressBar = document.getElementById("progress");
   const progressText = document.getElementById("progress-text");
 
@@ -374,7 +429,7 @@ function deleteItem(itemElement) {
     for (let person in personCheckedItems) {
       delete personCheckedItems[person][itemId];
     }
-    
+
     // 從DOM中移除項目
     itemElement.remove();
 
@@ -391,7 +446,7 @@ function saveList() {
   const categories = document.querySelectorAll(".category");
   const savedData = {
     categories: {},
-    personChecked: personCheckedItems // 保存每個人的勾選狀態
+    personChecked: personCheckedItems, // 保存每個人的勾選狀態
   };
 
   categories.forEach((category) => {
@@ -439,35 +494,35 @@ async function loadList() {
     // 沒有已保存的清單，載入預設項目
     try {
       // 從文件加載預設項目
-      const response = await fetch('defaultItems.json');
+      const response = await fetch("defaultItems.json");
       if (response.ok) {
         const defaultData = await response.json();
         renderSavedItems(defaultData);
       } else {
-        console.error('無法載入預設項目');
+        console.error("無法載入預設項目");
         // 初始化空清單
         initializePersonCheckedItems();
-        
+
         // 建立人員篩選按鈕
         createPersonFilters();
-        
+
         // 為已有的複選框添加事件
         initializeCheckboxEvents();
-        
+
         // 為刪除按鈕添加事件
         initializeDeleteEvents();
       }
     } catch (error) {
-      console.error('載入預設項目時出錯:', error);
+      console.error("載入預設項目時出錯:", error);
       // 初始化空清單
       initializePersonCheckedItems();
-      
+
       // 建立人員篩選按鈕
       createPersonFilters();
-      
+
       // 為已有的複選框添加事件
       initializeCheckboxEvents();
-      
+
       // 為刪除按鈕添加事件
       initializeDeleteEvents();
     }
@@ -502,7 +557,7 @@ function renderSavedItems(data) {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.id = item.id;
-        
+
         // 檢查當前選擇的人是否勾選了此項目
         const currentPerson = getCurrentFilterPerson();
         checkbox.checked = personCheckedItems[currentPerson] && personCheckedItems[currentPerson][item.id] === true;
@@ -580,13 +635,44 @@ function renderSavedItems(data) {
     }
   }
 
+  // 檢查共享項目的勾選狀態
+  updateSharedItemsAllStatus();
+
   // 更新進度
   updateProgress();
 
   // 更新篩選器
   createPersonFilters();
-  
+
   // 初始化事件
   initializeCheckboxEvents();
   initializeDeleteEvents();
+}
+
+// 更新所有共享項目在 all 篩選器中的狀態
+function updateSharedItemsAllStatus() {
+  // 檢查所有共享項目
+  const sharedItems = document.querySelectorAll("#public-items .item, #food-items .item");
+
+  sharedItems.forEach((item) => {
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    const itemId = checkbox.id;
+
+    // 獲取負責人列表
+    const responsiblePersons = item.dataset.person.split(",").map((p) => p.trim());
+    // 只考慮真實人員（不包括「所有人」標籤）
+    const realPersons = responsiblePersons.filter((p) => p !== "所有人");
+
+    if (realPersons.length > 0) {
+      // 檢查是否所有負責人都勾選了此項目
+      const allResponsibleChecked = realPersons.every((person) => personCheckedItems[person] && personCheckedItems[person][itemId]);
+
+      // 如果所有負責人都勾選了，則在 "all" 篩選器中也勾選
+      if (allResponsibleChecked) {
+        personCheckedItems["all"][itemId] = true;
+      } else {
+        delete personCheckedItems["all"][itemId];
+      }
+    }
+  });
 }
